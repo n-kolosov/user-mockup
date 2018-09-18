@@ -1,0 +1,13 @@
+extends layout
+block content
+  h5 Register
+  form(action='/auth/register', method='post')
+    .form-group
+      input.form-control(type='text', name='firstName', placeholder='First Name')
+    .form-group
+      input.form-control(type='text', name='lastName', placeholder='Last Name')
+    .form-group
+      input.form-control(type='text', name='username', placeholder='E-Mail')
+    .form-group
+      input.form-control(type='password', name='password', placeholder='Password')
+    button.btn.btn-primary(type='submit') Submit
