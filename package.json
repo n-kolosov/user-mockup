@@ -1,0 +1,40 @@
+{
+  "name": "user-mockup",
+  "version": "1.0.0",
+  "description": "user-mockup",
+  "main": "src/server/index.js",
+  "scripts": {
+    "start": "node ./src/server/index.js",
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n-kolosov/user-mockup.git"
+  },
+  "author": "Nikolay Kolosov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/n-kolosov/user-mockup/issues"
+  },
+  "homepage": "",
+  "dependencies": {
+    "accesscontrol": "^2.2.1",
+    "bcryptjs": "^2.4.3",
+    "knex": "^0.15.2",
+    "koa": "^2.5.2",
+    "koa-body": "^4.0.4",
+    "koa-bodyparser": "^4.2.1",
+    "koa-passport": "^4.1.1",
+    "koa-pug": "^3.0.0-2",
+    "koa-router": "^7.4.0",
+    "koa-session": "^5.9.0",
+    "koa-static": "^5.0.0",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0",
+    "pg": "^7.4.3",
+    "pug": "^2.0.3"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0"
+  }
+}

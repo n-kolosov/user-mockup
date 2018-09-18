@@ -1,0 +1,19 @@
+html
+  head
+    link(rel="stylesheet", href="/stylesheets/bootstrap.css")
+    title User mockup
+  body
+    .container
+      nav.navbar.navbar-expand-lg.navbar-light.bg-light
+        ul.navbar-nav.mr-auto
+          li.nav-item
+            h5
+              a.nav-link(href='/') Main
+          li.nav-item
+            h5
+              a.nav-link(href='/auth/register') Register
+        if userAuthenticated
+          a(href='/auth/logout') Logout
+        else
+          a(href='/auth/login') Login
+      block content

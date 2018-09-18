@@ -1,0 +1,21 @@
+extends layout.pug
+block content
+  p
+    h5 Users
+  if users
+    table.table.table-hover
+      thead
+        tr
+          th(scope='col') First name
+          th(scope='col') Last name
+          th(scope='col') E-Mail
+          th(scope='col') Role
+      tbody
+        each user in users
+          tr
+            td #{user['firstName']}
+            td #{user['lastName']}
+            td #{user['username']}
+            td #{user['role']}
+  else
+    h5 No users

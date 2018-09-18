@@ -59,3 +59,9 @@ typings/
 
 # next.js build output
 .next
+
+# configuration file
+config.js
+
+# WebStorm configuration files
+.idea
