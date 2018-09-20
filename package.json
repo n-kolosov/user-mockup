@@ -31,7 +31,8 @@
     "passport": "^0.4.0",
     "passport-local": "^1.0.0",
     "pg": "^7.4.3",
-    "pug": "^2.0.3"
+    "pug": "^2.0.3",
+    "sequelize": "^4.38.1"
   },
   "devDependencies": {
     "mocha": "^5.2.0"
