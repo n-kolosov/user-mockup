@@ -9,6 +9,7 @@ function addUser (user) {
       firstName: user.firstName,
       lastName: user.lastName,
       username: user.username,
+      role: user.role,
       password: hash
     })
     .returning('*')
