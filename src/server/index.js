@@ -26,20 +26,6 @@ function handle404Errors (ctx) {
   ctx.redirect('/not_found')
 }
 
-function authenticate (ctx) {
-  return passport.authenticate('local', (err, user, info, status) => {
-    if (user) {
-      ctx.login(user)
-      ctx.redirect('/')
-    } else {
-      err = 'User does not exists'
-      console.log(err)
-      ctx.status = 400
-      ctx.body = { status: 'error' }
-    }
-  })(ctx)
-}
-
 router.get('/not_found', (ctx) => {
   ctx.status = 404
   ctx.render('404', {
@@ -61,17 +47,50 @@ router.get('/users', async (ctx) => {
   })
 })
 
-router.get('/auth/register', (ctx) => {
-  if (!ctx.isAuthenticated()) {
-    ctx.render('register')
+router.get('/users/:id', async (ctx) => {
+  const user = await queries.getUserById(ctx.params.id)
+  ctx.render('user', {
+    user: user,
+    userAuthenticated: ctx.isAuthenticated()
+  })
+})
+
+router.post('/users/update', async (ctx) => {
+  console.log(ctx.request.body)
+  const update = await queries.updateUser(ctx.request.body)
+  if (update === false) {
+    ctx.redirect('/users/')
   } else {
     ctx.redirect('/')
   }
 })
 
+router.get('/query/:username', async (ctx) => {
+  const query = await queries.getUserByUsername(ctx.params.username)
+  ctx.body = query
+})
+
+router.get('/auth/register', (ctx) => {
+  ctx.render('register', {
+    userAuthenticated: ctx.isAuthenticated()
+  })
+})
+
 router.post('/auth/register', async (ctx) => {
-  await queries.addUser(ctx.request.body)
-  return authenticate(ctx)
+  const register = await queries.addUser(ctx.request.body)
+  if (register === false) {
+    ctx.redirect('/auth/register')
+  } else {
+    ctx.redirect('/')
+  }
+})
+// Метод, возвращающий форму смены пароля
+router.get('/users/:id/password', (ctx) => {
+  ctx.body = ctx.params.id
+})
+// Метод, обрабатывающий смену пароля
+router.post('/password/change', (ctx) => {
+
 })
 
 router.get('/auth/login', (ctx) => {
@@ -83,7 +102,17 @@ router.get('/auth/login', (ctx) => {
 })
 
 router.post('/auth/login', async (ctx) => {
-  return authenticate(ctx)
+  return passport.authenticate('local', (err, user, info, status) => {
+    if (user) {
+      ctx.login(user)
+      ctx.redirect('/')
+    } else {
+      err = 'User does not exist'
+      console.log(err)
+      ctx.status = 400
+      ctx.body = { status: 'error' }
+    }
+  })(ctx)
 })
 
 router.get('/auth/logout', async (ctx) => {

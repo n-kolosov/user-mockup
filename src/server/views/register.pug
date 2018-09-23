@@ -1,4 +1,4 @@
-extends layout
+extends layout.pug
 block content
   h5 Register
   form(action='/auth/register', method='post')
@@ -13,6 +13,7 @@ block content
     .form-group
       label(for='roles') Role
       select#roles.form-control(name='role')
-        option merchantManager
-        option categoryManager
+        option(value='Merchant Manager') Merchant Manager
+        option(value='Category Manager') Category Manager
     button.btn.btn-primary(type='submit') Submit
+
