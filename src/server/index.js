@@ -7,89 +7,86 @@ const bodyParser = require('koa-bodyparser')
 const session = require('koa-session')
 const passport = require('koa-passport')
 const AccessControl = require('accesscontrol')
+
 const config = require('../../config')
 const queries = require('./db/queries/users')
 const PORT = process.env.PORT || 3000
+
 const app = new Koa()
 const router = new Router()
+const ac = new AccessControl()
 const pug = new Pug({
   viewPath: 'src/server/views',
   basedir: 'src/server/views',
   app: app
 })
 
-const ac = new AccessControl()
-
-app.keys = [config.secretKey]
-app.use(session(app))
-
 function handle404Errors (ctx) {
   if (ctx.status !== 404) return
   ctx.redirect('/not_found')
 }
 
-function notFound (ctx) {
+function authenticate (ctx) {
+  return passport.authenticate('local', (err, user, info, status) => {
+    if (user) {
+      ctx.login(user)
+      ctx.redirect('/')
+    } else {
+      err = 'User does not exists'
+      console.log(err)
+      ctx.status = 400
+      ctx.body = { status: 'error' }
+    }
+  })(ctx)
+}
+
+router.get('/not_found', (ctx) => {
   ctx.status = 404
   ctx.render('404', {
     userAuthenticated: ctx.isAuthenticated()
   })
-}
+})
 
-function home (ctx) {
+router.get('/', (ctx) => {
   ctx.render('home', {
     userAuthenticated: ctx.isAuthenticated()
   })
-}
+})
 
-const getAllUsers = async (ctx) => {
+router.get('/users', async (ctx) => {
   const users = await queries.getAllUsers()
   ctx.render('users', {
-    users: users
+    users: users,
+    userAuthenticated: ctx.isAuthenticated()
   })
-}
+})
 
-function registerForm (ctx) {
+router.get('/auth/register', (ctx) => {
   if (!ctx.isAuthenticated()) {
     ctx.render('register')
   } else {
     ctx.redirect('/')
   }
-}
+})
 
-const register = async (ctx) => {
-  const user = await queries.addUser(ctx.request.body)
-  return passport.authenticate('local', (err, user, info, status) => {
-    if (user) {
-      ctx.login(user)
-      ctx.redirect('/')
-    } else {
-      ctx.status = 400
-      ctx.body = { status: 'error' }
-    }
-  })(ctx)
-}
+router.post('/auth/register', async (ctx) => {
+  await queries.addUser(ctx.request.body)
+  return authenticate(ctx)
+})
 
-function loginForm (ctx) {
+router.get('/auth/login', (ctx) => {
   if (!ctx.isAuthenticated()) {
     ctx.render('login')
   } else {
     ctx.redirect('/')
   }
-}
+})
 
-const login = async (ctx) => {
-  return passport.authenticate('local', (err, user, info, status) => {
-    if (user) {
-      ctx.login(user)
-      ctx.redirect('/')
-    } else {
-      ctx.status = 400
-      ctx.body = { status: 'error' }
-    }
-  })(ctx)
-}
+router.post('/auth/login', async (ctx) => {
+  return authenticate(ctx)
+})
 
-const logout = async (ctx) => {
+router.get('/auth/logout', async (ctx) => {
   if (ctx.isAuthenticated()) {
     ctx.logout()
     ctx.redirect('/')
@@ -97,18 +94,10 @@ const logout = async (ctx) => {
     ctx.body = { success: false }
     ctx.throw(401)
   }
-}
+})
 
-router.get('/', home)
-router.get('/not_found', notFound)
-router.get('/users', getAllUsers)
-
-router.get('/auth/register', registerForm)
-router.post('/auth/register', register)
-router.get('/auth/login', loginForm)
-router.post('/auth/login', login)
-router.get('/auth/logout', logout)
-
+app.keys = [config.secretKey]
+app.use(session(app))
 app.use(bodyParser())
 
 require('./auth')

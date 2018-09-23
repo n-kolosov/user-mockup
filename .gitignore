@@ -65,3 +65,6 @@ config.js
 
 # WebStorm configuration files
 .idea
+
+# To-do lists
+to-do.txt
