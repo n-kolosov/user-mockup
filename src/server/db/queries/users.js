@@ -15,7 +15,6 @@ function addUser (user) {
     .returning('*')
 }
 
-
 function getAllUsers() {
   return knex.select().table('users')
 }
