@@ -10,4 +10,9 @@ block content
       input.form-control(type='text', name='username', placeholder='E-Mail')
     .form-group
       input.form-control(type='password', name='password', placeholder='Password')
+    .form-group
+      label(for='roles') Role
+      select#roles.form-control(name='role')
+        option merchantManager
+        option categoryManager
     button.btn.btn-primary(type='submit') Submit

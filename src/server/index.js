@@ -18,6 +18,8 @@ const pug = new Pug({
   app: app
 })
 
+const ac = new AccessControl()
+
 app.keys = [config.secretKey]
 app.use(session(app))
 
