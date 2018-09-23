@@ -7,6 +7,7 @@ exports.up = (knex, Promise) => {
     table.string('username').unique().notNullable()
     table.string('password').notNullable()
     table.string('role').notNullable().defaultTo('merchantManager')
+    table.string('status').notNullable().defaultTo('active')
   })
 }
 

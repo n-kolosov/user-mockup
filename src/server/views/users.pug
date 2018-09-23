@@ -10,6 +10,8 @@ block content
           th(scope='col') Last name
           th(scope='col') E-Mail
           th(scope='col') Role
+          th(scope='col') Status
+          th(scope='col') ID
       tbody
         each user in users
           tr
@@ -17,5 +19,8 @@ block content
             td #{user['lastName']}
             td #{user['username']}
             td #{user['role']}
+            td #{user['status']}
+            td
+              a(href='/users/' + user['id']) #{user['id']}
   else
     h5 No users

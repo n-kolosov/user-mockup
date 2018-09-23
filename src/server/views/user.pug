@@ -1,0 +1,23 @@
+extends layout.pug
+//- Здесь должна быть форма редактирования пользователя
+block content
+  p
+    h5 User
+  if user
+    table.table.table-hover
+      thead
+        tr
+          th(scope='col') First name
+          th(scope='col') Last name
+          th(scope='col') E-Mail
+          th(scope='col') Role
+          th(scope='col') Status
+      tbody
+        tr
+          td #{user[0]['firstName']}
+          td #{user[0]['lastName']}
+          td #{user[0]['username']}
+          td #{user[0]['role']}
+          td #{user[0]['status']}
+  else
+    h5 No user

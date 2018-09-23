@@ -26,20 +26,6 @@ function handle404Errors (ctx) {
   ctx.redirect('/not_found')
 }
 
-function authenticate (ctx) {
-  return passport.authenticate('local', (err, user, info, status) => {
-    if (user) {
-      ctx.login(user)
-      ctx.redirect('/')
-    } else {
-      err = 'User does not exists'
-      console.log(err)
-      ctx.status = 400
-      ctx.body = { status: 'error' }
-    }
-  })(ctx)
-}
-
 router.get('/not_found', (ctx) => {
   ctx.status = 404
   ctx.render('404', {
@@ -61,17 +47,36 @@ router.get('/users', async (ctx) => {
   })
 })
 
+router.get('/users/:id', async (ctx) => {
+  const user = await queries.getUser(ctx.params.id)
+  ctx.render('user', {
+    user: user,
+    userAuthenticated: ctx.isAuthenticated()
+  })
+})
+// Здесь должна быть форма редактирования пользователя
+router.get('/query/:id', async (ctx) => {
+  const query = await queries.getUser(ctx.params.id)
+  ctx.body = query
+})
+/* Данный метод обрабатывает вставку обновлённых данных пользователя в БД
+router.put('/query/:id', async (ctx) => {
+  return null
+})
+*/
 router.get('/auth/register', (ctx) => {
-  if (!ctx.isAuthenticated()) {
-    ctx.render('register')
-  } else {
-    ctx.redirect('/')
-  }
+  ctx.render('register',{
+    userAuthenticated: ctx.isAuthenticated()
+  })
 })
 
 router.post('/auth/register', async (ctx) => {
-  await queries.addUser(ctx.request.body)
-  return authenticate(ctx)
+  const register = await queries.addUser(ctx.request.body)
+  if (register === false) {
+    ctx.redirect('/auth/register')
+  } else {
+    ctx.redirect('/')
+  }
 })
 
 router.get('/auth/login', (ctx) => {
@@ -83,7 +88,17 @@ router.get('/auth/login', (ctx) => {
 })
 
 router.post('/auth/login', async (ctx) => {
-  return authenticate(ctx)
+  return passport.authenticate('local', (err, user, info, status) => {
+    if (user) {
+      ctx.login(user)
+      ctx.redirect('/')
+    } else {
+      err = 'User does not exist'
+      console.log(err)
+      ctx.status = 400
+      ctx.body = { status: 'error' }
+    }
+  })(ctx)
 })
 
 router.get('/auth/logout', async (ctx) => {
