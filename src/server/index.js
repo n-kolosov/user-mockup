@@ -56,7 +56,6 @@ router.get('/users/:id', async (ctx) => {
 })
 
 router.post('/users/update', async (ctx) => {
-  console.log(ctx.request.body)
   const update = await queries.updateUser(ctx.request.body)
   if (update === false) {
     ctx.redirect('/users/')
@@ -84,13 +83,22 @@ router.post('/auth/register', async (ctx) => {
     ctx.redirect('/')
   }
 })
-// Метод, возвращающий форму смены пароля
+
 router.get('/users/:id/password', (ctx) => {
-  ctx.body = ctx.params.id
+  ctx.render('password', {
+    id: ctx.params.id,
+    userAuthenticated: ctx.isAuthenticated()
+  })
 })
 // Метод, обрабатывающий смену пароля
-router.post('/password/change', (ctx) => {
-
+router.post('/password/change', async (ctx) => {
+  console.log(ctx.request.body)
+  const update = await queries.updateUserPassword(ctx.request.body)
+  if (update === false) {
+    ctx.redirect('/users/')
+  } else {
+    ctx.redirect('/')
+  }
 })
 
 router.get('/auth/login', (ctx) => {

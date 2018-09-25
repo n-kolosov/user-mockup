@@ -49,6 +49,24 @@ function updateUser (user) {
   }
 }
 
+async function updateUserPassword (user) {
+  const salt = await bcrypt.genSalt()
+  const hash = await bcrypt.hash(user.password, salt)
+  if (userValidation.passwordLengthCheck(user.password)) {
+    return knex('users')
+        .update({
+          password: hash,
+        })
+        .where('id', user.id)
+        .catch(function (err) {
+          console.log(err.stack)
+          return false
+        })
+  } else {
+    return false
+  }
+}
+
 function getUserById (id) {
   return knex.select().table('users').where('id', id)
 }
@@ -62,5 +80,6 @@ module.exports = {
   getAllUsers,
   getUserById,
   getUserByUsername,
-  updateUser
+  updateUser,
+  updateUserPassword
 }
