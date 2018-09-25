@@ -16,6 +16,10 @@ async function addUser (user) {
         status: user.status
       })
       .returning('*')
+      .catch(function (err) {
+        console.log(err.stack)
+        return false
+      })
   } else {
     return false
   }
