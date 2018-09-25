@@ -1,10 +1,15 @@
+'use strict'
 const bcrypt = require('bcryptjs')
 const knex = require('../connection')
 const userValidation = require('../validations/userValidations')
 
-async function addUser (user) {
+async function getHashFromPassword (password) {
   const salt = await bcrypt.genSalt()
-  const hash = await bcrypt.hash(user.password, salt)
+  return await bcrypt.hash(password, salt)
+}
+
+async function addUser (user) {
+  const hash = await getHashFromPassword(user.password)
   if (userValidation.usernamePatternCheck(user.username) && userValidation.passwordLengthCheck(user.password)) {
     return knex('users')
       .insert({
@@ -15,7 +20,6 @@ async function addUser (user) {
         password: hash,
         status: 'Active'
       })
-      .returning('*')
       .catch(function (err) {
         console.log(err.stack)
         return false
@@ -50,18 +54,17 @@ function updateUser (user) {
 }
 
 async function updateUserPassword (user) {
-  const salt = await bcrypt.genSalt()
-  const hash = await bcrypt.hash(user.password, salt)
+  const hash = await getHashFromPassword(user.password)
   if (userValidation.passwordLengthCheck(user.password)) {
     return knex('users')
-        .update({
-          password: hash,
-        })
-        .where('id', user.id)
-        .catch(function (err) {
-          console.log(err.stack)
-          return false
-        })
+      .update({
+        password: hash
+      })
+      .where('id', user.id)
+      .catch(function (err) {
+        console.log(err.stack)
+        return false
+      })
   } else {
     return false
   }
@@ -71,15 +74,10 @@ function getUserById (id) {
   return knex.select().table('users').where('id', id)
 }
 
-function getUserByUsername (username) {
-  return knex.select().table('users').where('username', username)
-}
-
 module.exports = {
   addUser,
   getAllUsers,
   getUserById,
-  getUserByUsername,
   updateUser,
   updateUserPassword
 }

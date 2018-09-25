@@ -64,11 +64,6 @@ router.post('/users/update', async (ctx) => {
   }
 })
 
-router.get('/query/:username', async (ctx) => {
-  const query = await queries.getUserByUsername(ctx.params.username)
-  ctx.body = query
-})
-
 router.get('/auth/register', (ctx) => {
   ctx.render('register', {
     userAuthenticated: ctx.isAuthenticated()
@@ -80,7 +75,7 @@ router.post('/auth/register', async (ctx) => {
   if (register === false) {
     ctx.redirect('/auth/register')
   } else {
-    ctx.redirect('/')
+    ctx.redirect('/users/')
   }
 })
 
@@ -90,9 +85,8 @@ router.get('/users/:id/password', (ctx) => {
     userAuthenticated: ctx.isAuthenticated()
   })
 })
-// Метод, обрабатывающий смену пароля
+
 router.post('/password/change', async (ctx) => {
-  console.log(ctx.request.body)
   const update = await queries.updateUserPassword(ctx.request.body)
   if (update === false) {
     ctx.redirect('/users/')

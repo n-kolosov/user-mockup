@@ -1,3 +1,4 @@
+'use strict'
 const passport = require('koa-passport')
 const LocalStrategy = require('passport-local').Strategy
 const bcrypt = require('bcryptjs')

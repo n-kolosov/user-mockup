@@ -1,8 +1,7 @@
 extends layout.pug
-//- Здесь должна быть форма редактирования пользователя
 block content
   p
-    h5 User with id #{user[0]['id']}
+    h5 Edit user with id #{user[0]['id']}
   if user
     form(action='/users/update', method='post')
       input(type='hidden', name='id', value=user[0]['id'])
