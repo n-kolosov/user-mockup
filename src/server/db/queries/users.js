@@ -13,7 +13,7 @@ async function addUser (user) {
         username: user.username,
         role: user.role,
         password: hash,
-        status: user.status
+        status: 'Active'
       })
       .returning('*')
       .catch(function (err) {

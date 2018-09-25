@@ -104,13 +104,16 @@ router.get('/auth/login', (ctx) => {
 router.post('/auth/login', async (ctx) => {
   return passport.authenticate('local', (err, user, info, status) => {
     if (user) {
-      ctx.login(user)
-      ctx.redirect('/')
+      if (user.status === 'Blocked') {
+        ctx.redirect('/')
+      } else if (user.status === 'Active') {
+        ctx.login(user)
+        ctx.redirect('/')
+      }
     } else {
       err = 'User does not exist'
       console.log(err)
-      ctx.status = 400
-      ctx.body = { status: 'error' }
+      ctx.redirect('/')
     }
   })(ctx)
 })
