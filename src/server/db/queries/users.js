@@ -74,10 +74,6 @@ function getUserById (id) {
   return knex.select().table('users').where('id', id)
 }
 
-function getUserRoleById (username) {
-  return knex.select('role').table('users').where('username', '4@goods.ru')
-}
-
 module.exports = {
   addUser,
   getAllUsers,

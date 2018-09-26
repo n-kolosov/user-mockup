@@ -17,7 +17,7 @@ block content
   if flashPasswordUpdateSuccess.includes('Password updated successfully')
     .alert.alert-success(role='alert')
       | #{flashPasswordUpdateSuccess}
-  if users
+  if result
     table.table.table-hover
       thead
         tr
@@ -29,21 +29,15 @@ block content
           th(scope='col') Status
           th(scope='col') Action
       tbody
-        each user in users
+        each res in result
           tr
-            td #{user['id']}
-            td #{user['firstName']}
-            td #{user['lastName']}
-            td #{user['username']}
-            td #{user['role']}
-            td #{user['status']}
+            td #{res['id']}
+            td #{res['firstName']}
+            td #{res['lastName']}
+            td #{res['username']}
+            td #{res['role']}
+            td #{res['status']}
             td
-              a(href='/users/' + user['id']) Edit
+              a(href='/users/' + res['id']) Edit
   else
     h5 No users
-  p #{flashUpdateError}
-  p #{flashUpdateSuccess}
-  p #{flashRegisterSuccess}
-  p #{flashPasswordUpdateError}
-  p #{flashPasswordUpdateSuccess}
-  p #{flash[1]}

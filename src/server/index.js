@@ -6,7 +6,6 @@ const Serve = require('koa-static')
 const bodyParser = require('koa-bodyparser')
 const session = require('koa-session')
 const passport = require('koa-passport')
-const AccessControl = require('accesscontrol')
 const flash = require('koa-better-flash')
 
 const config = require('../../config')
@@ -15,39 +14,91 @@ const PORT = process.env.PORT || 3000
 
 const app = new Koa()
 const router = new Router()
-const ac = new AccessControl()
 const pug = new Pug({
   viewPath: 'src/server/views',
   basedir: 'src/server/views',
   app: app
 })
 
+  // метод checkAccess должен сравнивать роль из БД с ролью, которая передана в параметр
+  /* Попробовать сначала затащить в метод все роуты, а валидацию добавить потом
+  checkAccess  (role)  {
+    const id = ctx.cookies.get('id')
+    const user = queries.getUserById(id)
+    return user[0]['role'] === role
+  }
+*/
+function getRequest (path, page, status) {
+  router.get(path, (ctx) => {
+    ctx.status = status
+    ctx.render(page, {
+      id: ctx.params.id,
+      flashUserBlocked: ctx.flash('userBlocked'),
+      flashUserLoginSuccessful: ctx.flash('userLoginSuccessful'),
+      flashUserLoginError: ctx.flash('userLoginError'),
+      flashRegisterError: ctx.flash('registerError'),
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  })
+}
+
+async function getRequestWithQuery(path, page, status, query) {
+  router.get(path, async (ctx) => {
+    const result = await query
+    ctx.render(page, {
+      flashUpdateError: ctx.flash('updateError'),
+      flashUpdateSuccess: ctx.flash('updateSuccess'),
+      flashRegisterSuccess: ctx.flash('registerSuccess'),
+      flashPasswordUpdateError: ctx.flash('passwordUpdateError'),
+      flashPasswordUpdateSuccess: ctx.flash('passwordUpdateSuccess'),
+      result: result,
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  })
+}
+
+
+getRequest('/not_found', '404', 404)
+getRequest('/', 'home', 200)
+getRequest('/auth/register', 'register', 200)
+getRequest('/users/:id/password', 'password', 200)
+getRequestWithQuery('/users', 'users', 200, queries.getAllUsers())
+
 function handle404Errors (ctx) {
   if (ctx.status !== 404) return
   ctx.redirect('/not_found')
 }
 
-
-router.get('/not_found', (ctx) => {
-  ctx.status = 404
-  ctx.render('404', {
+router.get('/users/:id', async (ctx) => {
+  const user = await queries.getUserById(ctx.params.id)
+  ctx.render('user', {
+    user: user,
     userAuthenticated: ctx.isAuthenticated()
   })
 })
 
-router.get('/', (ctx) => {
-  ctx.render('home', {
-    flashUserBlocked: ctx.flash('userBlocked'),
-    flashUserLoginSuccessful: ctx.flash('userLoginSuccessful'),
-    flashUserLoginError: ctx.flash('userLoginError'),
-    userAuthenticated: ctx.isAuthenticated()
-  })
+router.get('/auth/login', (ctx) => {
+  if (!ctx.isAuthenticated()) {
+    ctx.render('login')
+  } else {
+    ctx.redirect('/')
+  }
 })
 
+router.get('/auth/logout', async (ctx) => {
+  if (ctx.isAuthenticated()) {
+    ctx.logout()
+    ctx.redirect('/')
+  } else {
+    ctx.body = { success: false }
+    ctx.throw(401)
+  }
+})
+
+/*
 router.get('/users', async (ctx) => {
   const id = ctx.cookies.get('id')
   const role = await queries.getUserById(id)
-  console.log(role)
   if (role[0]['role'] === 'admin') {
     const users = await queries.getAllUsers()
     ctx.render('users', {
@@ -57,12 +108,7 @@ router.get('/users', async (ctx) => {
       flashPasswordUpdateError: ctx.flash('passwordUpdateError'),
       flashPasswordUpdateSuccess: ctx.flash('passwordUpdateSuccess'),
       users: users,
-      userAuthenticated: ctx.isAuthenticated(),
-      flash: [ctx.flash('updateError'),
-        ctx.flash('updateSuccess'),
-        ctx.flash('registerSuccess'),
-        ctx.flash('passwordUpdateError'),
-        ctx.flash('passwordUpdateSuccess')]
+      userAuthenticated: ctx.isAuthenticated()
     })
   } else {
     ctx.status = 403
@@ -70,13 +116,11 @@ router.get('/users', async (ctx) => {
       userAuthenticated: ctx.isAuthenticated()
     })
   }
-
 })
 
 router.get('/users/:id', async (ctx) => {
   const id = ctx.cookies.get('id')
   const role = await queries.getUserById(id)
-  console.log(role)
   if (role[0]['role'] === 'admin') {
     const user = await queries.getUserById(ctx.params.id)
     ctx.render('user', {
@@ -90,6 +134,7 @@ router.get('/users/:id', async (ctx) => {
     })
   }
 })
+*/
 
 router.post('/users/update', async (ctx) => {
   const update = await queries.updateUser(ctx.request.body)
@@ -100,13 +145,6 @@ router.post('/users/update', async (ctx) => {
     ctx.flash('updateSuccess', 'User update successful')
     ctx.redirect('/users/')
   }
-})
-
-router.get('/auth/register', (ctx) => {
-  ctx.render('register', {
-    flashRegisterError: ctx.flash('registerError'),
-    userAuthenticated: ctx.isAuthenticated()
-  })
 })
 
 router.post('/auth/register', async (ctx) => {
@@ -120,13 +158,6 @@ router.post('/auth/register', async (ctx) => {
   }
 })
 
-router.get('/users/:id/password', (ctx) => {
-  ctx.render('password', {
-    id: ctx.params.id,
-    userAuthenticated: ctx.isAuthenticated()
-  })
-})
-
 router.post('/password/change', async (ctx) => {
   const update = await queries.updateUserPassword(ctx.request.body)
   if (update === false) {
@@ -135,14 +166,6 @@ router.post('/password/change', async (ctx) => {
   } else {
     ctx.flash('passwordUpdateSuccess', 'Password updated successfully')
     ctx.redirect('/users/')
-  }
-})
-
-router.get('/auth/login', (ctx) => {
-  if (!ctx.isAuthenticated()) {
-    ctx.render('login')
-  } else {
-    ctx.redirect('/')
   }
 })
 
@@ -163,16 +186,6 @@ router.post('/auth/login', async (ctx) => {
       ctx.redirect('/')
     }
   })(ctx)
-})
-
-router.get('/auth/logout', async (ctx) => {
-  if (ctx.isAuthenticated()) {
-    ctx.logout()
-    ctx.redirect('/')
-  } else {
-    ctx.body = { success: false }
-    ctx.throw(401)
-  }
 })
 
 app.keys = [config.secretKey]

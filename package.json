@@ -18,7 +18,6 @@
   },
   "homepage": "",
   "dependencies": {
-    "accesscontrol": "^2.2.1",
     "bcryptjs": "^2.4.3",
     "knex": "^0.15.2",
     "koa": "^2.5.2",
