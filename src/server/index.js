@@ -27,6 +27,7 @@ function handle404Errors (ctx) {
   ctx.redirect('/not_found')
 }
 
+
 router.get('/not_found', (ctx) => {
   ctx.status = 404
   ctx.render('404', {
@@ -44,24 +45,50 @@ router.get('/', (ctx) => {
 })
 
 router.get('/users', async (ctx) => {
-  const users = await queries.getAllUsers()
-  ctx.render('users', {
-    flashUpdateError: ctx.flash('updateError'),
-    flashUpdateSuccess: ctx.flash('updateSuccess'),
-    flashRegisterSuccess: ctx.flash('registerSuccess'),
-    flashPasswordUpdateError: ctx.flash('passwordUpdateError'),
-    flashPasswordUpdateSuccess: ctx.flash('passwordUpdateSuccess'),
-    users: users,
-    userAuthenticated: ctx.isAuthenticated()
-  })
+  const id = ctx.cookies.get('id')
+  const role = await queries.getUserById(id)
+  console.log(role)
+  if (role[0]['role'] === 'admin') {
+    const users = await queries.getAllUsers()
+    ctx.render('users', {
+      flashUpdateError: ctx.flash('updateError'),
+      flashUpdateSuccess: ctx.flash('updateSuccess'),
+      flashRegisterSuccess: ctx.flash('registerSuccess'),
+      flashPasswordUpdateError: ctx.flash('passwordUpdateError'),
+      flashPasswordUpdateSuccess: ctx.flash('passwordUpdateSuccess'),
+      users: users,
+      userAuthenticated: ctx.isAuthenticated(),
+      flash: [ctx.flash('updateError'),
+        ctx.flash('updateSuccess'),
+        ctx.flash('registerSuccess'),
+        ctx.flash('passwordUpdateError'),
+        ctx.flash('passwordUpdateSuccess')]
+    })
+  } else {
+    ctx.status = 403
+    ctx.render('403', {
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  }
+
 })
 
 router.get('/users/:id', async (ctx) => {
-  const user = await queries.getUserById(ctx.params.id)
-  ctx.render('user', {
-    user: user,
-    userAuthenticated: ctx.isAuthenticated()
-  })
+  const id = ctx.cookies.get('id')
+  const role = await queries.getUserById(id)
+  console.log(role)
+  if (role[0]['role'] === 'admin') {
+    const user = await queries.getUserById(ctx.params.id)
+    ctx.render('user', {
+      user: user,
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  } else {
+    ctx.status = 403
+    ctx.render('403', {
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  }
 })
 
 router.post('/users/update', async (ctx) => {
@@ -126,6 +153,7 @@ router.post('/auth/login', async (ctx) => {
         ctx.flash('userBlocked', 'You\'re blocked, ha-ha-ha!')
         ctx.redirect('/')
       } else if (user.status === 'Active') {
+        ctx.cookies.set('id', user['id'])
         ctx.login(user)
         ctx.flash('userLoginSuccessful', 'Welcome')
         ctx.redirect('/')
