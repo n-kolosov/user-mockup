@@ -2,6 +2,21 @@ extends layout.pug
 block content
   p
     h5 Users
+  if flashUpdateError.includes('User update failed')
+    .alert.alert-danger(role='alert')
+      | #{flashUpdateError}
+  if flashUpdateSuccess.includes('User update successful')
+    .alert.alert-success(role='alert')
+      | #{flashUpdateSuccess}
+  if flashRegisterSuccess.includes('Registration successful')
+    .alert.alert-success(role='alert')
+      | #{flashRegisterSuccess}
+  if flashPasswordUpdateError.includes('Password update error')
+    .alert.alert-danger(role='alert')
+      | #{flashPasswordUpdateError}
+  if flashPasswordUpdateSuccess.includes('Password updated successfully')
+    .alert.alert-success(role='alert')
+      | #{flashPasswordUpdateSuccess}
   if users
     table.table.table-hover
       thead

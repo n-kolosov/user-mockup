@@ -7,6 +7,7 @@ const bodyParser = require('koa-bodyparser')
 const session = require('koa-session')
 const passport = require('koa-passport')
 const AccessControl = require('accesscontrol')
+const flash = require('koa-better-flash')
 
 const config = require('../../config')
 const queries = require('./db/queries/users')
@@ -35,6 +36,9 @@ router.get('/not_found', (ctx) => {
 
 router.get('/', (ctx) => {
   ctx.render('home', {
+    flashUserBlocked: ctx.flash('userBlocked'),
+    flashUserLoginSuccessful: ctx.flash('userLoginSuccessful'),
+    flashUserLoginError: ctx.flash('userLoginError'),
     userAuthenticated: ctx.isAuthenticated()
   })
 })
@@ -42,6 +46,11 @@ router.get('/', (ctx) => {
 router.get('/users', async (ctx) => {
   const users = await queries.getAllUsers()
   ctx.render('users', {
+    flashUpdateError: ctx.flash('updateError'),
+    flashUpdateSuccess: ctx.flash('updateSuccess'),
+    flashRegisterSuccess: ctx.flash('registerSuccess'),
+    flashPasswordUpdateError: ctx.flash('passwordUpdateError'),
+    flashPasswordUpdateSuccess: ctx.flash('passwordUpdateSuccess'),
     users: users,
     userAuthenticated: ctx.isAuthenticated()
   })
@@ -58,14 +67,17 @@ router.get('/users/:id', async (ctx) => {
 router.post('/users/update', async (ctx) => {
   const update = await queries.updateUser(ctx.request.body)
   if (update === false) {
+    ctx.flash('updateError', 'User update failed')
     ctx.redirect('/users/')
   } else {
-    ctx.redirect('/')
+    ctx.flash('updateSuccess', 'User update successful')
+    ctx.redirect('/users/')
   }
 })
 
 router.get('/auth/register', (ctx) => {
   ctx.render('register', {
+    flashRegisterError: ctx.flash('registerError'),
     userAuthenticated: ctx.isAuthenticated()
   })
 })
@@ -73,8 +85,10 @@ router.get('/auth/register', (ctx) => {
 router.post('/auth/register', async (ctx) => {
   const register = await queries.addUser(ctx.request.body)
   if (register === false) {
+    ctx.flash('registerError', 'Registration failed')
     ctx.redirect('/auth/register')
   } else {
+    ctx.flash('registerSuccess', 'Registration successful')
     ctx.redirect('/users/')
   }
 })
@@ -89,9 +103,11 @@ router.get('/users/:id/password', (ctx) => {
 router.post('/password/change', async (ctx) => {
   const update = await queries.updateUserPassword(ctx.request.body)
   if (update === false) {
+    ctx.flash('passwordUpdateError', 'Password update error')
     ctx.redirect('/users/')
   } else {
-    ctx.redirect('/')
+    ctx.flash('passwordUpdateSuccess', 'Password updated successfully')
+    ctx.redirect('/users/')
   }
 })
 
@@ -107,14 +123,15 @@ router.post('/auth/login', async (ctx) => {
   return passport.authenticate('local', (err, user, info, status) => {
     if (user) {
       if (user.status === 'Blocked') {
+        ctx.flash('userBlocked', 'You\'re blocked, ha-ha-ha!')
         ctx.redirect('/')
       } else if (user.status === 'Active') {
         ctx.login(user)
+        ctx.flash('userLoginSuccessful', 'Welcome')
         ctx.redirect('/')
       }
     } else {
-      err = 'User does not exist'
-      console.log(err)
+      ctx.flash('userLoginError', 'Login failed. Try again with another e-mail or password')
       ctx.redirect('/')
     }
   })(ctx)
@@ -132,6 +149,7 @@ router.get('/auth/logout', async (ctx) => {
 
 app.keys = [config.secretKey]
 app.use(session(app))
+app.use(flash(app))
 app.use(bodyParser())
 
 require('./auth')

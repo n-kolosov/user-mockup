@@ -1,6 +1,9 @@
 extends layout.pug
 block content
   h5 Register
+  if flashRegisterError.includes('Registration failed')
+    .alert.alert-danger(role='alert')
+      | #{flashRegisterError}
   form(action='/auth/register', method='post')
     .form-group
       input.form-control(type='text', name='firstName', placeholder='First Name')
