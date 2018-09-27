@@ -20,54 +20,33 @@ const pug = new Pug({
   app: app
 })
 
-  // метод checkAccess должен сравнивать роль из БД с ролью, которая передана в параметр
-  /* Попробовать сначала затащить в метод все роуты, а валидацию добавить потом
-  checkAccess  (role)  {
-    const id = ctx.cookies.get('id')
-    const user = queries.getUserById(id)
-    return user[0]['role'] === role
-  }
-*/
-function getRequest (path, page, status) {
-  router.get(path, (ctx) => {
-    ctx.status = status
-    ctx.render(page, {
-      id: ctx.params.id,
-      flashUserBlocked: ctx.flash('userBlocked'),
-      flashUserLoginSuccessful: ctx.flash('userLoginSuccessful'),
-      flashUserLoginError: ctx.flash('userLoginError'),
-      flashRegisterError: ctx.flash('registerError'),
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  })
-}
-
-async function getRequestWithQuery(path, page, status, query) {
-  router.get(path, async (ctx) => {
-    const result = await query
-    ctx.render(page, {
-      flashUpdateError: ctx.flash('updateError'),
-      flashUpdateSuccess: ctx.flash('updateSuccess'),
-      flashRegisterSuccess: ctx.flash('registerSuccess'),
-      flashPasswordUpdateError: ctx.flash('passwordUpdateError'),
-      flashPasswordUpdateSuccess: ctx.flash('passwordUpdateSuccess'),
-      result: result,
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  })
-}
-
-
-getRequest('/not_found', '404', 404)
-getRequest('/', 'home', 200)
-getRequest('/auth/register', 'register', 200)
-getRequest('/users/:id/password', 'password', 200)
-getRequestWithQuery('/users', 'users', 200, queries.getAllUsers())
-
 function handle404Errors (ctx) {
   if (ctx.status !== 404) return
   ctx.redirect('/not_found')
 }
+
+router.get('/not_found', (ctx) => {
+  ctx.status = 404
+  ctx.render('404', {
+    userAuthenticated: ctx.isAuthenticated()
+  })
+})
+
+router.get('/', (ctx) => {
+  ctx.render('home', {
+    flash: ctx.flash('message'),
+    userAuthenticated: ctx.isAuthenticated()
+  })
+})
+
+router.get('/users', async (ctx) => {
+  const users = await queries.getAllUsers()
+  ctx.render('users', {
+    flash: ctx.flash('message'),
+    users: users,
+    userAuthenticated: ctx.isAuthenticated()
+  })
+})
 
 router.get('/users/:id', async (ctx) => {
   const user = await queries.getUserById(ctx.params.id)
@@ -75,6 +54,53 @@ router.get('/users/:id', async (ctx) => {
     user: user,
     userAuthenticated: ctx.isAuthenticated()
   })
+})
+
+router.post('/users/update', async (ctx) => {
+  const update = await queries.updateUser(ctx.request.body)
+  if (update === false) {
+    ctx.flash('message', 'User update failed')
+    ctx.redirect('/users/')
+  } else {
+    ctx.flash('message', 'User update successful')
+    ctx.redirect('/users/')
+  }
+})
+
+router.get('/auth/register', (ctx) => {
+  ctx.render('register', {
+    flash: ctx.flash('message'),
+    userAuthenticated: ctx.isAuthenticated()
+  })
+})
+
+router.post('/auth/register', async (ctx) => {
+  const register = await queries.addUser(ctx.request.body)
+  if (register === false) {
+    ctx.flash('message', 'Registration failed')
+    ctx.redirect('/auth/register')
+  } else {
+    ctx.flash('message', 'Registration successful')
+    ctx.redirect('/users/')
+  }
+})
+
+router.get('/users/:id/password', (ctx) => {
+  ctx.render('password', {
+    id: ctx.params.id,
+    userAuthenticated: ctx.isAuthenticated()
+  })
+})
+
+router.post('/password/change', async (ctx) => {
+  const update = await queries.updateUserPassword(ctx.request.body)
+  if (update === false) {
+    ctx.flash('message', 'Password update error')
+    ctx.redirect('/users/')
+  } else {
+    ctx.flash('message', 'Password updated successfully')
+    ctx.redirect('/users/')
+  }
 })
 
 router.get('/auth/login', (ctx) => {
@@ -85,6 +111,30 @@ router.get('/auth/login', (ctx) => {
   }
 })
 
+router.get('/query/:username', async (ctx) => {
+  ctx.body = await queries.usernameUniqueCheck(ctx.params.username)
+})
+
+router.post('/auth/login', async (ctx) => {
+  return passport.authenticate('local', (err, user, info, status) => {
+    if (user) {
+      if (user.status === 'Blocked') {
+        ctx.flash('message', 'You\'re blocked, ha-ha-ha!')
+        ctx.redirect('/')
+      } else if (user.status === 'Active') {
+        ctx.cookies.set('id', user['id'])
+        ctx.login(user)
+        ctx.flash('message', 'Welcome')
+        ctx.redirect('/')
+      }
+    } else {
+      console.log(err)
+      ctx.flash('message', 'Login failed. Try again with another e-mail or password')
+      ctx.redirect('/')
+    }
+  })(ctx)
+})
+
 router.get('/auth/logout', async (ctx) => {
   if (ctx.isAuthenticated()) {
     ctx.logout()
@@ -93,99 +143,6 @@ router.get('/auth/logout', async (ctx) => {
     ctx.body = { success: false }
     ctx.throw(401)
   }
-})
-
-/*
-router.get('/users', async (ctx) => {
-  const id = ctx.cookies.get('id')
-  const role = await queries.getUserById(id)
-  if (role[0]['role'] === 'admin') {
-    const users = await queries.getAllUsers()
-    ctx.render('users', {
-      flashUpdateError: ctx.flash('updateError'),
-      flashUpdateSuccess: ctx.flash('updateSuccess'),
-      flashRegisterSuccess: ctx.flash('registerSuccess'),
-      flashPasswordUpdateError: ctx.flash('passwordUpdateError'),
-      flashPasswordUpdateSuccess: ctx.flash('passwordUpdateSuccess'),
-      users: users,
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  } else {
-    ctx.status = 403
-    ctx.render('403', {
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  }
-})
-
-router.get('/users/:id', async (ctx) => {
-  const id = ctx.cookies.get('id')
-  const role = await queries.getUserById(id)
-  if (role[0]['role'] === 'admin') {
-    const user = await queries.getUserById(ctx.params.id)
-    ctx.render('user', {
-      user: user,
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  } else {
-    ctx.status = 403
-    ctx.render('403', {
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  }
-})
-*/
-
-router.post('/users/update', async (ctx) => {
-  const update = await queries.updateUser(ctx.request.body)
-  if (update === false) {
-    ctx.flash('updateError', 'User update failed')
-    ctx.redirect('/users/')
-  } else {
-    ctx.flash('updateSuccess', 'User update successful')
-    ctx.redirect('/users/')
-  }
-})
-
-router.post('/auth/register', async (ctx) => {
-  const register = await queries.addUser(ctx.request.body)
-  if (register === false) {
-    ctx.flash('registerError', 'Registration failed')
-    ctx.redirect('/auth/register')
-  } else {
-    ctx.flash('registerSuccess', 'Registration successful')
-    ctx.redirect('/users/')
-  }
-})
-
-router.post('/password/change', async (ctx) => {
-  const update = await queries.updateUserPassword(ctx.request.body)
-  if (update === false) {
-    ctx.flash('passwordUpdateError', 'Password update error')
-    ctx.redirect('/users/')
-  } else {
-    ctx.flash('passwordUpdateSuccess', 'Password updated successfully')
-    ctx.redirect('/users/')
-  }
-})
-
-router.post('/auth/login', async (ctx) => {
-  return passport.authenticate('local', (err, user, info, status) => {
-    if (user) {
-      if (user.status === 'Blocked') {
-        ctx.flash('userBlocked', 'You\'re blocked, ha-ha-ha!')
-        ctx.redirect('/')
-      } else if (user.status === 'Active') {
-        ctx.cookies.set('id', user['id'])
-        ctx.login(user)
-        ctx.flash('userLoginSuccessful', 'Welcome')
-        ctx.redirect('/')
-      }
-    } else {
-      ctx.flash('userLoginError', 'Login failed. Try again with another e-mail or password')
-      ctx.redirect('/')
-    }
-  })(ctx)
 })
 
 app.keys = [config.secretKey]
@@ -201,8 +158,6 @@ app.use(Serve('./public'))
 app.use(router.routes())
 app.use(handle404Errors)
 
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server listening on port: ${PORT}`)
 })
-
-module.exports = server

@@ -1,9 +1,8 @@
 extends layout.pug
 block content
   h5 Register
-  if flashRegisterError.includes('Registration failed')
-    .alert.alert-danger(role='alert')
-      | #{flashRegisterError}
+  if flash.includes('Registration failed')
+    .alert.alert-danger(role='alert') #{flash}
   form(action='/auth/register', method='post')
     .form-group
       input.form-control(type='text', name='firstName', placeholder='First Name')
@@ -19,4 +18,3 @@ block content
         option(value='Merchant Manager') Merchant Manager
         option(value='Category Manager') Category Manager
     button.btn.btn-primary(type='submit') Submit
-

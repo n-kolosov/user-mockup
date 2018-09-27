@@ -1,23 +1,19 @@
 extends layout.pug
 block content
+  each f in flash
+    if f.includes('User update failed')
+      .alert.alert-danger(role='alert') #{f}
+    if f.includes('User update successful')
+      .alert.alert-success(role='alert') #{f}
+    if f.includes('Registration successful')
+      .alert.alert-success(role='alert') #{f}
+    if f.includes('Password update error')
+      .alert.alert-danger(role='alert') #{f}
+    if f.includes('Password updated successfully')
+      .alert.alert-success(role='alert') #{f}
   p
     h5 Users
-  if flashUpdateError.includes('User update failed')
-    .alert.alert-danger(role='alert')
-      | #{flashUpdateError}
-  if flashUpdateSuccess.includes('User update successful')
-    .alert.alert-success(role='alert')
-      | #{flashUpdateSuccess}
-  if flashRegisterSuccess.includes('Registration successful')
-    .alert.alert-success(role='alert')
-      | #{flashRegisterSuccess}
-  if flashPasswordUpdateError.includes('Password update error')
-    .alert.alert-danger(role='alert')
-      | #{flashPasswordUpdateError}
-  if flashPasswordUpdateSuccess.includes('Password updated successfully')
-    .alert.alert-success(role='alert')
-      | #{flashPasswordUpdateSuccess}
-  if result
+  if users
     table.table.table-hover
       thead
         tr
@@ -29,15 +25,15 @@ block content
           th(scope='col') Status
           th(scope='col') Action
       tbody
-        each res in result
+        each user in users
           tr
-            td #{res['id']}
-            td #{res['firstName']}
-            td #{res['lastName']}
-            td #{res['username']}
-            td #{res['role']}
-            td #{res['status']}
+            td #{user['id']}
+            td #{user['firstName']}
+            td #{user['lastName']}
+            td #{user['username']}
+            td #{user['role']}
+            td #{user['status']}
             td
-              a(href='/users/' + res['id']) Edit
+              a(href='/users/' + user['id']) Edit
   else
     h5 No users
