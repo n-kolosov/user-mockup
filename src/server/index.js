@@ -44,7 +44,7 @@ router.get('/users', async (ctx) => {
   ctx.render('users', {
     flash: ctx.flash('message'),
     users: users,
-    userAuthenticated: ctx.isAuthenticated(),
+    userAuthenticated: ctx.isAuthenticated()
   })
 })
 
@@ -111,6 +111,10 @@ router.get('/auth/login', (ctx) => {
   }
 })
 
+router.get('/query/:username', async (ctx) => {
+  ctx.body = await queries.usernameUniqueCheck(ctx.params.username)
+})
+
 router.post('/auth/login', async (ctx) => {
   return passport.authenticate('local', (err, user, info, status) => {
     if (user) {
@@ -124,6 +128,7 @@ router.post('/auth/login', async (ctx) => {
         ctx.redirect('/')
       }
     } else {
+      console.log(err)
       ctx.flash('message', 'Login failed. Try again with another e-mail or password')
       ctx.redirect('/')
     }
@@ -153,6 +158,6 @@ app.use(Serve('./public'))
 app.use(router.routes())
 app.use(handle404Errors)
 
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server listening on port: ${PORT}`)
 })
