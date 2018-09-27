@@ -1,5 +1,7 @@
 extends layout
 block content
+  if flash.includes('Login failed. Try again with another e-mail or password')
+    .alert.alert-danger(role='alert') #{flash}
   h5 Login
   form(action='/auth/login', method='post')
     .form-group

@@ -1,0 +1,8 @@
+extends layout.pug
+block content
+  h5 Change e-mail of user with id #{id}
+  form(action='/username/change', method='post')
+    input(type='hidden', name='id', value=id)
+    .form-group
+      input.form-control(type='text', name='username', placeholder='E-Mail')
+    button.btn.btn-primary(type='submit') Submit

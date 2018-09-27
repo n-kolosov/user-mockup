@@ -11,6 +11,10 @@ block content
       .alert.alert-danger(role='alert') #{f}
     if f.includes('Password updated successfully')
       .alert.alert-success(role='alert') #{f}
+    if f.includes('Username update error')
+      .alert.alert-danger(role='alert') #{f}
+    if f.includes('Username updated successfully')
+      .alert.alert-success(role='alert') #{f}
   p
     h5 Users
   if users

@@ -25,6 +25,95 @@ function handle404Errors (ctx) {
   ctx.redirect('/not_found')
 }
 
+async function checkRole (ctx, role) {
+  const id = ctx.cookies.get('id')
+  if (id === undefined) {
+    return false
+  } else {
+    const userRole = await queries.getUserById(id)
+    return userRole['role'] === role
+  }
+}
+
+router.get('/users', async (ctx) => {
+  const role1 = await checkRole(ctx, 'admin')
+  const role2 = await checkRole(ctx, 'Merchant Manager')
+  if (role1 || role2) {
+    const users = await queries.getAllUsers()
+    ctx.render('users', {
+      flash: ctx.flash('message'),
+      users: users,
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  } else {
+    ctx.status = 403
+    ctx.render('403', {
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  }
+})
+
+router.get('/users/:id', async (ctx) => {
+  const role1 = await checkRole(ctx, 'admin')
+  if (role1 === true) {
+    const user = await queries.getUserById(ctx.params.id)
+    ctx.render('user', {
+      user: user,
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  } else {
+    ctx.status = 403
+    ctx.render('403', {
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  }
+})
+
+router.get('/auth/register', async (ctx) => {
+  const role1 = await checkRole(ctx, 'admin')
+  if (role1 === true) {
+    ctx.render('register', {
+      flash: ctx.flash('message'),
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  } else {
+    ctx.status = 403
+    ctx.render('403', {
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  }
+})
+
+router.get('/users/:id/username', async (ctx) => {
+  const role1 = await checkRole(ctx, 'admin')
+  if (role1 === true) {
+    ctx.render('username', {
+      id: ctx.params.id,
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  } else {
+    ctx.status = 403
+    ctx.render('403', {
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  }
+})
+
+router.get('/users/:id/password', async (ctx) => {
+  const role1 = await checkRole(ctx, 'admin')
+  if (role1 === true) {
+    ctx.render('password', {
+      id: ctx.params.id,
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  } else {
+    ctx.status = 403
+    ctx.render('403', {
+      userAuthenticated: ctx.isAuthenticated()
+    })
+  }
+})
+
 router.get('/not_found', (ctx) => {
   ctx.status = 404
   ctx.render('404', {
@@ -35,23 +124,6 @@ router.get('/not_found', (ctx) => {
 router.get('/', (ctx) => {
   ctx.render('home', {
     flash: ctx.flash('message'),
-    userAuthenticated: ctx.isAuthenticated()
-  })
-})
-
-router.get('/users', async (ctx) => {
-  const users = await queries.getAllUsers()
-  ctx.render('users', {
-    flash: ctx.flash('message'),
-    users: users,
-    userAuthenticated: ctx.isAuthenticated()
-  })
-})
-
-router.get('/users/:id', async (ctx) => {
-  const user = await queries.getUserById(ctx.params.id)
-  ctx.render('user', {
-    user: user,
     userAuthenticated: ctx.isAuthenticated()
   })
 })
@@ -67,13 +139,6 @@ router.post('/users/update', async (ctx) => {
   }
 })
 
-router.get('/auth/register', (ctx) => {
-  ctx.render('register', {
-    flash: ctx.flash('message'),
-    userAuthenticated: ctx.isAuthenticated()
-  })
-})
-
 router.post('/auth/register', async (ctx) => {
   const register = await queries.addUser(ctx.request.body)
   if (register === false) {
@@ -83,13 +148,6 @@ router.post('/auth/register', async (ctx) => {
     ctx.flash('message', 'Registration successful')
     ctx.redirect('/users/')
   }
-})
-
-router.get('/users/:id/password', (ctx) => {
-  ctx.render('password', {
-    id: ctx.params.id,
-    userAuthenticated: ctx.isAuthenticated()
-  })
 })
 
 router.post('/password/change', async (ctx) => {
@@ -103,16 +161,29 @@ router.post('/password/change', async (ctx) => {
   }
 })
 
+router.post('/username/change', async (ctx) => {
+  const update = await queries.updateUserUsername(ctx.request.body)
+  if (update === false) {
+    ctx.flash('message', 'Username update error')
+    ctx.redirect('/users/')
+  } else {
+    ctx.flash('message', 'Username updated successfully')
+    ctx.redirect('/users/')
+  }
+})
+
 router.get('/auth/login', (ctx) => {
   if (!ctx.isAuthenticated()) {
-    ctx.render('login')
+    ctx.render('login', {
+      flash: ctx.flash('message')
+    })
   } else {
     ctx.redirect('/')
   }
 })
 
-router.get('/query/:username', async (ctx) => {
-  ctx.body = await queries.usernameUniqueCheck(ctx.params.username)
+router.get('/query/:id', async (ctx) => {
+  ctx.body = await queries.getUserById(ctx.params.id)
 })
 
 router.post('/auth/login', async (ctx) => {
@@ -130,13 +201,14 @@ router.post('/auth/login', async (ctx) => {
     } else {
       console.log(err)
       ctx.flash('message', 'Login failed. Try again with another e-mail or password')
-      ctx.redirect('/')
+      ctx.redirect('/auth/login')
     }
   })(ctx)
 })
 
 router.get('/auth/logout', async (ctx) => {
   if (ctx.isAuthenticated()) {
+    ctx.cookies.set('id', undefined)
     ctx.logout()
     ctx.redirect('/')
   } else {
