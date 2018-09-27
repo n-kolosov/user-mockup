@@ -5,12 +5,25 @@ const userValidation = require('../validations/userValidations')
 
 async function getHashFromPassword (password) {
   const salt = await bcrypt.genSalt()
-  return await bcrypt.hash(password, salt)
+  return bcrypt.hash(password, salt)
+}
+
+function getUserByUsername (username) {
+  return knex.select().table('users').where('username', username)
+}
+
+async function usernameUniqueCheck (username) {
+  const result = await getUserByUsername(username)
+  return !!(result.length === 0)
 }
 
 async function addUser (user) {
+  const usernameUnique = await usernameUniqueCheck(user.username)
+  const usernamePattern = userValidation.usernamePatternCheck(user.username)
+  const passwordLength = userValidation.passwordLengthCheck(user.password)
+
   const hash = await getHashFromPassword(user.password)
-  if (userValidation.usernamePatternCheck(user.username) && userValidation.passwordLengthCheck(user.password)) {
+  if (usernameUnique && usernamePattern && passwordLength) {
     return knex('users')
       .insert({
         firstName: user.firstName,
@@ -25,6 +38,7 @@ async function addUser (user) {
         return false
       })
   } else {
+    console.log('Username is incorrect')
     return false
   }
 }
