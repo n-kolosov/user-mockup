@@ -1,28 +1,28 @@
 extends layout.pug
 block content
   p
-    h5 Edit user with id #{result[0]['id']}
-  if result
+    h5 Edit user with id #{user[0]['id']}
+  if user
     form(action='/users/update', method='post')
-      input(type='hidden', name='id', value=result[0]['id'])
+      input(type='hidden', name='id', value=user[0]['id'])
       .form-group
-        input.form-control(type='text', name='firstName', value=result[0]['firstName'], placeholder='First Name')
+        input.form-control(type='text', name='firstName', value=user[0]['firstName'], placeholder='First Name')
       .form-group
-        input.form-control(type='text', name='lastName', value=result[0]['lastName'], placeholder='Last Name')
+        input.form-control(type='text', name='lastName', value=user[0]['lastName'], placeholder='Last Name')
       .form-group
-        input.form-control(type='text', name='username', value=result[0]['username'], placeholder='E-Mail')
+        input.form-control(type='text', name='username', value=user[0]['username'], placeholder='E-Mail')
       .form-group
-        label(for='roles') Role - current is #{result[0]['role']}
+        label(for='roles') Role - current is #{user[0]['role']}
         select#roles.form-control(name='role')
           option(value='Merchant Manager') Merchant Manager
           option(value='Category Manager') Category Manager
       .form-group
-        label(for='status') Status - current is #{result[0]['status']}
+        label(for='status') Status - current is #{user[0]['status']}
         select#status.form-control(name='status')
           option(value='Active') Active
           option(value='Blocked') Blocked
       button.btn.btn-primary(type='submit') Submit
     br
-    a(href='/users/' + result[0]['id'] + '/password') Change user password
+    a(href='/users/' + user[0]['id'] + '/password') Change user password
   else
     h5 No such user
