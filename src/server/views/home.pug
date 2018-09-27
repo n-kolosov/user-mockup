@@ -1,13 +1,10 @@
 extends layout.pug
 block content
+  if flash.includes('You\'re blocked, ha-ha-ha!')
+    .alert.alert-dark(role='alert') #{flash}
+  if flash.includes('Welcome')
+    .alert.alert-success(role='alert') #{flash}
+  if flash.includes('Login failed. Try again with another e-mail or password')
+    .alert.alert-danger(role='alert') #{flash}
   p
     h5 Home page
-  if flashUserBlocked.includes('You\'re blocked, ha-ha-ha!')
-    .alert.alert-dark(role='alert')
-      | #{flashUserBlocked}
-  if flashUserLoginSuccessful.includes('Welcome')
-    .alert.alert-success(role='alert')
-      | #{flashUserLoginSuccessful}
-  if flashUserLoginError.includes('Login failed. Try again with another e-mail or password')
-    .alert.alert-danger(role='alert')
-      | #{flashUserLoginError}
