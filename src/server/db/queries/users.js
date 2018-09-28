@@ -87,10 +87,10 @@ async function updateUserUsername (user) {
   if (usernameUnique && usernamePattern) {
     try {
       return knex('users')
-          .update({
-            username: user.username
-          })
-          .where('id', user.id)
+        .update({
+          username: user.username
+        })
+        .where('id', user.id)
     } catch (err) {
       console.log(err.stack)
       return false
