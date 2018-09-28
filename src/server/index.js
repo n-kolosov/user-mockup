@@ -56,7 +56,7 @@ function getRequest (path, page, status) {
   })
 }
 
-//Отрефакторить
+//Отрефакторить, убрать повторяющиеся render
 function getRequestWithAccess (path, page, status, roles) {
   router.get(path, async (ctx) => {
     const access = await checkRole(ctx, roles)
@@ -84,7 +84,7 @@ getRequestWithAccess('/users/:id/password', 'password', 200, ['admin'])
 
 // Метод с запросом в БД
 router.get('/users', async (ctx) => {
-  const access = await checkRole(ctx, ['admin'])
+  const access = await checkRole(ctx, ['admin', 'Merchant Manager'])
   if (access) {
     const users = await queries.getAllUsers()
     ctx.render('users', {
