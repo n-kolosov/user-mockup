@@ -10,7 +10,7 @@ const flash = require('koa-better-flash')
 
 const config = require('../../config')
 const queries = require('./db/queries/users')
-const PORT = process.env.PORT || 3000
+const PORT = 3000
 
 const app = new Koa()
 const router = new Router()
@@ -27,104 +27,42 @@ function handle404Errors (ctx) {
 
 async function checkRole (ctx, roles) {
   const id = ctx.cookies.get('id')
-  if (id === undefined) {
-    return false
-  } else {
-    if (roles.length === 0) {
-      return true
-    } else {
-      const user = await queries.getUserById(id)
-      let a = 0
-      roles.forEach(function (role) {
-        if (role === user['role']) {
-          a = +1
-        }
-      })
-      return a > 0
-    }
+  if ((id !== undefined) && (roles.length !== 0)) {
+    const user = await queries.getUserById(id)
+    let a = 0
+    roles.forEach(function (role) {
+      if (role === user['role']) {
+        a = +1
+      }
+    })
+    return a > 0
   }
 }
 
-function getRequest (path, page, status) {
-  router.get(path, (ctx) => {
-    ctx.status = status
-    ctx.render(page, {
-      id: ctx.params.id,
-      flash: ctx.flash('message'),
-      userAuthenticated: ctx.isAuthenticated()
-    })
+function renderPage (ctx, status, page, params) {
+  ctx.status = status
+  ctx.render(page, {
+    params: params,
+    id: ctx.params.id,
+    flash: ctx.flash('message'),
+    userAuthenticated: ctx.isAuthenticated()
   })
 }
 
-//Отрефакторить, убрать повторяющиеся render
-function getRequestWithAccess (path, page, status, roles) {
-  router.get(path, async (ctx) => {
-    const access = await checkRole(ctx, roles)
-    if (access) {
-      ctx.status = status
-      ctx.render(page, {
-        id: ctx.params.id,
-        flash: ctx.flash('message'),
-        userAuthenticated: ctx.isAuthenticated()
-      })
-    } else {
-      ctx.status = 403
-      ctx.render('403', {
-        userAuthenticated: ctx.isAuthenticated()
-      })
-    }
-  })
-}
-
-getRequest('/not_found', '404', 404)
-getRequest('/', 'home', 200)
-getRequestWithAccess('/auth/register', 'register', 200, ['admin'])
-getRequestWithAccess('/users/:id/username', 'username', 200, ['admin'])
-getRequestWithAccess('/users/:id/password', 'password', 200, ['admin'])
-
-// Метод с запросом в БД
-router.get('/users', async (ctx) => {
-  const access = await checkRole(ctx, ['admin', 'Merchant Manager'])
-  if (access) {
-    const users = await queries.getAllUsers()
-    ctx.render('users', {
-      flash: ctx.flash('message'),
-      users: users,
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  } else {
-    ctx.status = 403
-    ctx.render('403', {
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  }
+router.get('/', (ctx) => {
+  renderPage(ctx, 200, 'home')
 })
 
-// Метод с запросом в БД
-router.get('/users/:id', async (ctx) => {
+router.get('/not_found', (ctx) => {
+  renderPage(ctx, 404, '404')
+})
+
+router.get('/auth/register', async (ctx) => {
   const access = await checkRole(ctx, ['admin'])
-  if (access === true) {
-    const user = await queries.getUserById(ctx.params.id)
-    ctx.render('user', {
-      user: user,
-      userAuthenticated: ctx.isAuthenticated()
-    })
+  if (access) {
+    renderPage(ctx, 200, 'register')
   } else {
-    ctx.status = 403
-    ctx.render('403', {
-      userAuthenticated: ctx.isAuthenticated()
-    })
-  }
-})
-
-router.post('/users/update', async (ctx) => {
-  const update = await queries.updateUser(ctx.request.body)
-  if (update === false) {
-    ctx.flash('message', 'User update failed')
-    ctx.redirect('/users/')
-  } else {
-    ctx.flash('message', 'User update successful')
-    ctx.redirect('/users/')
+    renderPage(ctx, 403, '403')
   }
 })
 
@@ -139,14 +77,12 @@ router.post('/auth/register', async (ctx) => {
   }
 })
 
-router.post('/password/change', async (ctx) => {
-  const update = await queries.updateUserPassword(ctx.request.body)
-  if (update === false) {
-    ctx.flash('message', 'Password update error')
-    ctx.redirect('/users/')
+router.get('/users/:id/username', async (ctx) => {
+  const access = await checkRole(ctx, ['admin'])
+  if (access) {
+    renderPage(ctx, 200, 'username')
   } else {
-    ctx.flash('message', 'Password updated successfully')
-    ctx.redirect('/users/')
+    renderPage(ctx, 403, '403')
   }
 })
 
@@ -154,11 +90,59 @@ router.post('/username/change', async (ctx) => {
   const update = await queries.updateUserUsername(ctx.request.body)
   if (update === false) {
     ctx.flash('message', 'Username update error')
-    ctx.redirect('/users/')
   } else {
     ctx.flash('message', 'Username updated successfully')
-    ctx.redirect('/users/')
   }
+  ctx.redirect('/users/')
+})
+
+router.get('/users/:id/password', async (ctx) => {
+  const access = await checkRole(ctx, ['admin'])
+  if (access) {
+    renderPage(ctx, 200, 'password')
+  } else {
+    renderPage(ctx, 403, '403')
+  }
+})
+
+router.post('/password/change', async (ctx) => {
+  const update = await queries.updateUserPassword(ctx.request.body)
+  if (update === false) {
+    ctx.flash('message', 'Password update error')
+  } else {
+    ctx.flash('message', 'Password updated successfully')
+  }
+  ctx.redirect('/users/')
+})
+
+router.get('/users', async (ctx) => {
+  const access = await checkRole(ctx, ['admin'])
+  if (access) {
+    const users = await queries.getAllUsers()
+    renderPage(ctx, 200, 'users', users)
+  } else {
+    renderPage(ctx, 403, '403')
+  }
+})
+
+router.get('/users/:id', async (ctx) => {
+  const access = await checkRole(ctx, ['admin'])
+  if (access) {
+    const user = await queries.getUserById(ctx.params.id)
+    renderPage(ctx, 200, 'user', user)
+  } else {
+    renderPage(ctx, 403, '403')
+  }
+})
+
+router.post('/users/update', async (ctx) => {
+  const update = await queries.updateUser(ctx.request.body)
+  if (update === false) {
+    ctx.flash('message', 'User update failed')
+  } else {
+    ctx.flash('message', 'User update successful')
+  }
+  ctx.redirect('/users/')
 })
 
 router.post('/auth/login', async (ctx) => {
@@ -181,18 +165,32 @@ router.post('/auth/login', async (ctx) => {
   })(ctx)
 })
 
-// Метод с редиректом
+router.get('/merchant_manager', async (ctx) => {
+  const access = await checkRole(ctx, ['admin', 'Merchant Manager'])
+  if (access) {
+    renderPage(ctx, 200, 'merchantManager')
+  } else {
+    renderPage(ctx, 403, '403')
+  }
+})
+
+router.get('/category_manager', async (ctx) => {
+  const access = await checkRole(ctx, ['admin', 'Category Manager'])
+  if (access) {
+    renderPage(ctx, 200, 'categoryManager')
+  } else {
+    renderPage(ctx, 403, '403')
+  }
+})
+
 router.get('/auth/login', (ctx) => {
   if (!ctx.isAuthenticated()) {
-    ctx.render('login', {
-      flash: ctx.flash('message')
-    })
+    renderPage(ctx, 200, 'login')
   } else {
     ctx.redirect('/')
   }
 })
 
-// Метод с редиректом
 router.get('/auth/logout', async (ctx) => {
   if (ctx.isAuthenticated()) {
     ctx.cookies.set('id', undefined)
@@ -202,10 +200,6 @@ router.get('/auth/logout', async (ctx) => {
     ctx.body = { success: false }
     ctx.throw(401)
   }
-})
-
-router.get('/query/:id', async (ctx) => {
-  ctx.body = await queries.getUserById(ctx.params.id)
 })
 
 app.keys = [config.secretKey]

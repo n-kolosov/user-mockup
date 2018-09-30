@@ -17,7 +17,7 @@ block content
       .alert.alert-success(role='alert') #{f}
   p
     h5 Users
-  if users
+  if params
     table.table.table-hover
       thead
         tr
@@ -29,15 +29,15 @@ block content
           th(scope='col') Status
           th(scope='col') Action
       tbody
-        each user in users
+        each param in params
           tr
-            td #{user['id']}
-            td #{user['firstName']}
-            td #{user['lastName']}
-            td #{user['username']}
-            td #{user['role']}
-            td #{user['status']}
+            td #{param['id']}
+            td #{param['firstName']}
+            td #{param['lastName']}
+            td #{param['username']}
+            td #{param['role']}
+            td #{param['status']}
             td
-              a(href='/users/' + user['id']) Edit
+              a(href='/users/' + param['id']) Edit
   else
     h5 No users
